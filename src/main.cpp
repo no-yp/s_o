@@ -2,30 +2,10 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "ast.hpp"
+#include "parser.hpp"
 using namespace std;
 
-enum class TokenType {
-  // literal
-  INT_LIT, FLOAT_LIT, STRING_LIT,
-  IDENT, // identifier
-  // keywords
-  KW_INT, KW_FLOAT, KW_IF, KW_ELSE, KW_WHILE, KW_RETURN,
-  // ooerator
-  OP_PLUS, OP_MINUS, OP_STAR, OP_SLASH, OP_ASSIGN,
-  OP_EQ, OP_NEQ, OP_LT, OP_GT, OP_LTE, OP_GTE,
-  // punctuator
-  P_LPAREN, P_RPAREN, P_LBRACE, P_RBRACE, P_SEMICOLON, P_COMMA,
-  // error
-  UNKNOWN, END_OF_FILE
-};
-
-struct Token {
-  TokenType type; string value;
-  int line, column;
-
-  Token(TokenType t, string v, int ln, int col):
-    type(t), value(std::move(v)), line(ln), column(col) {}
-};
 
 // class implementation of lexical analyzer
 class LexicalAnalyzer {
@@ -153,14 +133,16 @@ class LexicalAnalyzer {
 };
 
 const unordered_map<string, TokenType> LexicalAnalyzer::keywords = {
+  { "let",     TokenType::KW_LET    },
   { "int",     TokenType::KW_INT    },
   { "float",   TokenType::KW_FLOAT  },
   { "if",      TokenType::KW_IF     },
   { "else",    TokenType::KW_ELSE   },
-  { "while",   TokenType::KW_WHILE   },
+  { "while",   TokenType::KW_WHILE  },
   { "return",  TokenType::KW_RETURN }
 };
 
+/*
 const char* tokenTypeName(TokenType t) {
   switch (t) {
     case TokenType::INT_LIT:     return "INT_LIT";
@@ -168,6 +150,7 @@ const char* tokenTypeName(TokenType t) {
     case TokenType::STRING_LIT:  return "STRING_LIT";
     case TokenType::IDENT:       return "IDENT";
 
+    case TokenType::KW_LET:      return "KW_LET";
     case TokenType::KW_INT:      return "KW_INT";
     case TokenType::KW_FLOAT:    return "KW_FLOAT";
     case TokenType::KW_IF:       return "KW_IF";
@@ -207,22 +190,31 @@ void printTokens(const vector<Token>& tokens) {
     cout << '\n';
   }
 }
+// usage: primtTokens(tokens);;
+*/
 
 int main() {
-  string src =
-    "\nint main() {\n\tconst float pi = 3.14;\n\tint y = 5;\n"
-    "\tfloat z = x + y;\n\nwhile (z != 0) {\n\tif (z <= 0)"
-    " break;\n\tz--;\n\n"
-    "\tretrun 0\n}\n"
-    "\n\nconstif,\n<>!whilereturn"
+  std::string src =
+    "let x = 5\n"
+    "let y = 1 + 2\n"
+    "let z = x + y * 2\n"
   ;
-
+  std::cout << "\nSource: \n" << src << "\n";
   LexicalAnalyzer lexer(src);
   auto tokens = lexer.tokenize();
+  std::cout << "\nTokens:\n";
+  for (const auto& t : tokens)
+    std::cout << " " << t.line <<":"<< t.column <<" "<< t.value <<'\n';
 
-  cout << "\nSource:\n" << src << "\n\nTokens:\n";
-  printTokens(tokens);
+  std::cout << "\nprogram:\n";
+  try {
+    Parser parser(tokens);
+    auto program = parser.parseProgram();
+    for (const auto& stmt : program)
+    { stmt->print(std::cout); }
+  } catch (const std::exception& e)
+  { std::cout << " " << e.what() << '\n'; }
 
-  cout << endl;
+  std::cout << std::endl;
   return 0;
 }
